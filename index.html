@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Sistema de Estoque Profissional</title>
+    <title>Sistema de Estoque - Adicionar e Vender</title>
     <style>
         * {
             margin: 0;
@@ -30,10 +30,7 @@
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            text-align: center;
         }
 
         .header h1 {
@@ -41,10 +38,46 @@
             font-size: 1.8em;
         }
 
+        .botoes-principais {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn-grande {
+            flex: 1;
+            padding: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-vender {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+
+        .btn-adicionar {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+        }
+
+        .btn-grande:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
         .header-buttons {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 15px;
         }
 
         .alertas-baixo {
@@ -69,6 +102,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .main-grid {
@@ -128,11 +162,6 @@
         .btn-warning { background: #ed8936; color: white; }
         .btn-info { background: #4299e1; color: white; }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -161,6 +190,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .total-carrinho {
@@ -177,6 +207,17 @@
             border-radius: 8px;
             margin-bottom: 15px;
             display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
         .alert-success { background: #c6f6d5; color: #22543d; }
@@ -203,6 +244,8 @@
             max-width: 95%;
             width: 500px;
             text-align: center;
+            max-height: 80%;
+            overflow-y: auto;
         }
 
         #scanner-container {
@@ -215,13 +258,27 @@
             border-radius: 10px;
         }
 
+        .quantidade-modal {
+            margin: 15px 0;
+        }
+
+        .quantidade-modal input {
+            font-size: 2em;
+            text-align: center;
+            padding: 10px;
+            width: 100%;
+        }
+
         @media (max-width: 768px) {
             .main-grid {
                 grid-template-columns: 1fr;
             }
-            .header {
+            .botoes-principais {
                 flex-direction: column;
-                text-align: center;
+            }
+            .btn-grande {
+                padding: 15px;
+                font-size: 1em;
             }
         }
     </style>
@@ -229,29 +286,35 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📦 Sistema de Estoque Profissional</h1>
+            <h1>📦 Sistema de Estoque</h1>
+            <div class="botoes-principais">
+                <button class="btn-grande btn-vender" onclick="abrirScannerVenda()">
+                    🛒 VENDER POR CÓDIGO
+                </button>
+                <button class="btn-grande btn-adicionar" onclick="abrirScannerAdicionar()">
+                    ➕ ADICIONAR POR CÓDIGO
+                </button>
+            </div>
             <div class="header-buttons">
-                <button class="btn btn-info" onclick="abrirRelatorioVendas()">📊 Relatório do Dia</button>
-                <button class="btn btn-success" onclick="exportarExcel()">📎 Exportar Excel</button>
+                <button class="btn btn-info" onclick="abrirRelatorioVendas()">📊 Relatório</button>
+                <button class="btn btn-success" onclick="exportarExcel()">📎 Excel</button>
                 <button class="btn btn-warning" onclick="fazerBackup()">💾 Backup</button>
-                <button class="btn btn-primary" onclick="restaurarBackup()">🔄 Restaurar</button>
+                <button class="btn btn-primary" onclick="abrirGerenciar()">⚙️ Gerenciar</button>
             </div>
         </div>
 
         <div id="alertasBaixo" class="alertas-baixo" style="display: none;">
-            <h3>⚠️ ALERTA: PRODUTOS COM ESTOQUE BAIXO</h3>
+            <h3>⚠️ PRODUTOS COM ESTOQUE BAIXO</h3>
             <div id="listaAlertas"></div>
         </div>
 
-        <div class="main-grid">
+        <div class="main-grid" id="painelGerenciar" style="display: none;">
             <div class="card">
                 <h2>📝 Gerenciar Produtos</h2>
-                <div id="alert" class="alert"></div>
-                
                 <div class="form-group">
                     <label>Código de Barras</label>
-                    <input type="text" id="codigoBarras" placeholder="Digite ou escaneie o código">
-                    <button class="btn btn-info" onclick="abrirScanner()" style="margin-top: 5px; width: 100%;">📷 Escanear Código de Barras</button>
+                    <input type="text" id="codigoBarras" placeholder="Código do produto">
+                    <button class="btn btn-info" onclick="abrirScannerGerenciar()" style="margin-top: 5px;">📷 Escanear</button>
                 </div>
                 
                 <div class="form-group">
@@ -281,6 +344,7 @@
                 
                 <button class="btn btn-primary" onclick="adicionarProduto()">➕ Adicionar</button>
                 <button class="btn btn-warning" onclick="atualizarProduto()">🔄 Atualizar</button>
+                <button class="btn btn-danger" onclick="fecharGerenciar()">❌ Fechar</button>
             </div>
 
             <div class="card">
@@ -299,7 +363,7 @@
         <div class="card">
             <h2>🛒 Carrinho de Vendas</h2>
             <div class="form-group">
-                <label>Buscar Produto</label>
+                <label>Ou digite para buscar</label>
                 <input type="text" id="buscaProduto" placeholder="Digite código ou nome">
                 <div id="sugestoesProdutos" style="background: white; border: 1px solid #ddd; display: none; position: absolute; z-index: 100;"></div>
             </div>
@@ -321,13 +385,53 @@
         </div>
     </div>
 
-    <!-- Modal do Scanner CORRIGIDO -->
+    <!-- Modal para quantidade na VENDA -->
+    <div id="modalQuantidade" class="modal">
+        <div class="modal-content">
+            <h2>🛒 Vender Produto</h2>
+            <div id="produtoEscaneado"></div>
+            <div class="quantidade-modal">
+                <label>Quantidade:</label>
+                <input type="number" id="quantidadeVenda" value="1" min="1">
+            </div>
+            <button class="btn btn-success" onclick="confirmarVendaPorScanner()">✅ Confirmar Venda</button>
+            <button class="btn btn-danger" onclick="fecharModalQuantidade()">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Modal para cadastro de novo produto -->
+    <div id="modalCadastro" class="modal">
+        <div class="modal-content">
+            <h2>➕ Cadastrar Novo Produto</h2>
+            <div id="codigoEscaneado"></div>
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="novoProdutoNome" placeholder="Ex: Arroz, Feijão...">
+            </div>
+            <div class="form-group">
+                <label>Quantidade</label>
+                <input type="number" id="novoProdutoQuantidade" placeholder="Quantidade">
+            </div>
+            <div class="form-group">
+                <label>Preço Unitário (R$)</label>
+                <input type="number" id="novoProdutoPreco" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label>Data de Validade</label>
+                <input type="date" id="novoProdutoValidade">
+            </div>
+            <button class="btn btn-primary" onclick="confirmarCadastroScanner()">✅ Cadastrar</button>
+            <button class="btn btn-danger" onclick="fecharModalCadastro()">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Modal do Scanner -->
     <div id="modalScanner" class="modal">
         <div class="modal-content">
-            <h2>📷 Escanear Código de Barras</h2>
+            <h2 id="scannerTitulo">📷 Escaneie o Código</h2>
             <div id="scanner-container"></div>
-            <p style="margin: 10px 0; color: #666; font-size: 12px;">Aponte a câmera para o código de barras</p>
-            <button class="btn btn-danger" onclick="fecharScanner()" style="width: 100%;">❌ Fechar</button>
+            <p style="margin: 10px 0; color: #666;">Aponte a câmera para o código de barras</p>
+            <button class="btn btn-danger" onclick="fecharScanner()" style="width: 100%;">❌ Cancelar</button>
         </div>
     </div>
 
@@ -348,6 +452,8 @@
         </div>
     </div>
 
+    <div id="alertToast" class="alert"></div>
+
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -357,10 +463,12 @@
         let vendasDiarias = JSON.parse(localStorage.getItem('vendasDiarias')) || [];
         let html5QrCode;
         let scannerAtivo = false;
+        let ultimoCodigoEscaneado = null;
+        let modoScanner = null; // 'venda' ou 'adicionar'
         const ESTOQUE_MINIMO_PADRAO = 5;
 
         function mostrarAlerta(msg, tipo) {
-            const alert = document.getElementById('alert');
+            const alert = document.getElementById('alertToast');
             alert.className = `alert alert-${tipo}`;
             alert.innerHTML = msg;
             alert.style.display = 'block';
@@ -407,19 +515,15 @@
             }
         }
 
-        function gerarCodigo() {
-            return 'PROD_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        }
-
         function adicionarProduto() {
-            const codigo = document.getElementById('codigoBarras').value || gerarCodigo();
+            const codigo = document.getElementById('codigoBarras').value;
             const nome = document.getElementById('produtoNome').value.trim().toLowerCase();
             const quantidade = parseInt(document.getElementById('produtoQuantidade').value);
             const preco = parseFloat(document.getElementById('produtoPreco').value);
             const validade = document.getElementById('dataValidade').value;
             const estoqueMinimo = parseInt(document.getElementById('estoqueMinimo').value) || ESTOQUE_MINIMO_PADRAO;
             
-            if (!nome || !quantidade || !preco) {
+            if (!codigo || !nome || !quantidade || !preco) {
                 mostrarAlerta('Preencha todos os campos!', 'error');
                 return;
             }
@@ -472,62 +576,144 @@
             document.getElementById('estoqueMinimo').value = p.estoqueMinimo || ESTOQUE_MINIMO_PADRAO;
         }
 
-        // Scanner CORRIGIDO - Abre a câmera automaticamente
-        async function abrirScanner() {
+        // ============ SCANNER PARA VENDA ============
+        function abrirScannerVenda() {
+            modoScanner = 'venda';
+            document.getElementById('scannerTitulo').innerHTML = '🛒 Escaneie para VENDER';
+            abrirScanner();
+        }
+
+        // ============ SCANNER PARA ADICIONAR ============
+        function abrirScannerAdicionar() {
+            modoScanner = 'adicionar';
+            document.getElementById('scannerTitulo').innerHTML = '➕ Escaneie para ADICIONAR';
+            abrirScanner();
+        }
+
+        function abrirScanner() {
             const modal = document.getElementById('modalScanner');
             modal.style.display = 'flex';
             
             const container = document.getElementById('scanner-container');
-            container.innerHTML = '<div style="text-align: center; padding: 20px;">Iniciando câmera...</div>';
+            container.innerHTML = '<div style="text-align: center; padding: 20px;">📷 Iniciando câmera...</div>';
             
             try {
-                // Verificar se o navegador suporta
                 if (typeof Html5Qrcode === 'undefined') {
-                    container.innerHTML = '<div style="color: red;">Erro: Biblioteca não carregada. Recarregue a página.</div>';
+                    container.innerHTML = '<div style="color: red;">Erro: Biblioteca não carregada.</div>';
                     return;
                 }
                 
                 html5QrCode = new Html5Qrcode("scanner-container");
                 scannerAtivo = true;
                 
-                const config = {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0
-                };
+                const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
                 
-                await html5QrCode.start(
-                    { facingMode: "environment" }, // Usa câmera traseira
+                html5QrCode.start(
+                    { facingMode: "environment" },
                     config,
                     (decodedText) => {
-                        // Sucesso ao ler o código
-                        document.getElementById('codigoBarras').value = decodedText;
-                        
-                        if (estoque[decodedText]) {
-                            carregarProduto(decodedText);
-                            mostrarAlerta(`✅ Produto encontrado: ${estoque[decodedText].nome}`, 'success');
-                        } else {
-                            mostrarAlerta(`📷 Código lido: ${decodedText}\nProduto não cadastrado. Preencha os dados.`, 'info');
-                        }
-                        
+                        ultimoCodigoEscaneado = decodedText;
                         fecharScanner();
+                        
+                        if (modoScanner === 'venda') {
+                            // MODO VENDA
+                            if (estoque[decodedText]) {
+                                const produto = estoque[decodedText];
+                                document.getElementById('produtoEscaneado').innerHTML = `
+                                    <p><strong>${produto.nome}</strong></p>
+                                    <p>Preço: R$ ${produto.preco.toFixed(2)}</p>
+                                    <p>Estoque disponível: ${produto.quantidade}</p>
+                                `;
+                                document.getElementById('quantidadeVenda').value = 1;
+                                document.getElementById('quantidadeVenda').max = produto.quantidade;
+                                document.getElementById('modalQuantidade').style.display = 'flex';
+                            } else {
+                                mostrarAlerta(`❌ Produto com código ${decodedText} não cadastrado!`, 'error');
+                                setTimeout(() => {
+                                    abrirGerenciar();
+                                    document.getElementById('codigoBarras').value = decodedText;
+                                    document.getElementById('produtoNome').focus();
+                                }, 2000);
+                            }
+                        } else if (modoScanner === 'adicionar') {
+                            // MODO ADICIONAR
+                            if (estoque[decodedText]) {
+                                mostrarAlerta(`⚠️ Produto já existe! Use o modo VENDA ou atualize.`, 'error');
+                                setTimeout(() => {
+                                    abrirGerenciar();
+                                    carregarProduto(decodedText);
+                                }, 1500);
+                            } else {
+                                document.getElementById('codigoEscaneado').innerHTML = `<p><strong>Código: ${decodedText}</strong></p>`;
+                                document.getElementById('novoProdutoNome').value = '';
+                                document.getElementById('novoProdutoQuantidade').value = '';
+                                document.getElementById('novoProdutoPreco').value = '';
+                                document.getElementById('novoProdutoValidade').value = '';
+                                document.getElementById('modalCadastro').style.display = 'flex';
+                            }
+                        }
                     },
-                    (errorMessage) => {
-                        // Erro de leitura - não faz nada, continua tentando
-                        console.log("Erro de leitura:", errorMessage);
-                    }
+                    (errorMessage) => { console.log("Aguardando..."); }
                 );
             } catch (err) {
-                console.error("Erro ao iniciar scanner:", err);
-                container.innerHTML = `<div style="color: red; padding: 20px;">
-                    ❌ Erro ao acessar a câmera.<br><br>
-                    Verifique:<br>
-                    1. Permissão da câmera no navegador<br>
-                    2. Conexão HTTPS (necessário para câmera)<br>
-                    3. Se está usando Chrome, Edge ou Safari
-                </div>`;
-                mostrarAlerta('❌ Não foi possível acessar a câmera. Verifique as permissões.', 'error');
+                container.innerHTML = `<div style="color: red; padding: 20px;">❌ Erro ao acessar a câmera.</div>`;
+                mostrarAlerta('❌ Erro ao acessar a câmera', 'error');
             }
+        }
+
+        function confirmarVendaPorScanner() {
+            const quantidade = parseInt(document.getElementById('quantidadeVenda').value);
+            const codigo = ultimoCodigoEscaneado;
+            
+            if (!codigo || !estoque[codigo]) {
+                mostrarAlerta('Produto não encontrado!', 'error');
+                fecharModalQuantidade();
+                return;
+            }
+            
+            if (quantidade > estoque[codigo].quantidade) {
+                mostrarAlerta(`Estoque insuficiente! Temos apenas ${estoque[codigo].quantidade}`, 'error');
+                return;
+            }
+            
+            const existente = carrinho.find(item => item.codigo === codigo);
+            if (existente) {
+                existente.quantidade += quantidade;
+            } else {
+                carrinho.push({ codigo, nome: estoque[codigo].nome, quantidade, preco: estoque[codigo].preco });
+            }
+            
+            mostrarAlerta(`✅ ${quantidade}x ${estoque[codigo].nome} adicionado ao carrinho!`, 'success');
+            atualizarCarrinho();
+            fecharModalQuantidade();
+        }
+
+        function confirmarCadastroScanner() {
+            const codigo = ultimoCodigoEscaneado;
+            const nome = document.getElementById('novoProdutoNome').value.trim().toLowerCase();
+            const quantidade = parseInt(document.getElementById('novoProdutoQuantidade').value);
+            const preco = parseFloat(document.getElementById('novoProdutoPreco').value);
+            const validade = document.getElementById('novoProdutoValidade').value;
+            
+            if (!nome || !quantidade || !preco) {
+                mostrarAlerta('Preencha nome, quantidade e preço!', 'error');
+                return;
+            }
+            
+            estoque[codigo] = { nome, quantidade, preco, validade, estoqueMinimo: ESTOQUE_MINIMO_PADRAO };
+            salvarEstoque();
+            mostrarAlerta(`✅ ${nome} cadastrado com sucesso!`, 'success');
+            fecharModalCadastro();
+        }
+
+        function fecharModalQuantidade() {
+            document.getElementById('modalQuantidade').style.display = 'none';
+            ultimoCodigoEscaneado = null;
+        }
+
+        function fecharModalCadastro() {
+            document.getElementById('modalCadastro').style.display = 'none';
+            ultimoCodigoEscaneado = null;
         }
 
         function fecharScanner() {
@@ -544,6 +730,51 @@
                 document.getElementById('modalScanner').style.display = 'none';
                 document.getElementById('scanner-container').innerHTML = '';
             }
+        }
+
+        function abrirScannerGerenciar() {
+            modoScanner = 'gerenciar';
+            document.getElementById('scannerTitulo').innerHTML = '⚙️ Escaneie para GERENCIAR';
+            const modal = document.getElementById('modalScanner');
+            modal.style.display = 'flex';
+            
+            const container = document.getElementById('scanner-container');
+            container.innerHTML = '<div style="text-align: center; padding: 20px;">📷 Iniciando câmera...</div>';
+            
+            try {
+                html5QrCode = new Html5Qrcode("scanner-container");
+                scannerAtivo = true;
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: 250 },
+                    (decodedText) => {
+                        document.getElementById('codigoBarras').value = decodedText;
+                        if (estoque[decodedText]) {
+                            carregarProduto(decodedText);
+                            mostrarAlerta(`✅ Produto encontrado: ${estoque[decodedText].nome}`, 'success');
+                        } else {
+                            mostrarAlerta(`Código ${decodedText} - Preencha os dados para cadastrar`, 'info');
+                            document.getElementById('produtoNome').focus();
+                        }
+                        fecharScanner();
+                    },
+                    (errorMessage) => {}
+                );
+            } catch (err) {
+                container.innerHTML = `<div style="color: red; padding: 20px;">❌ Erro na câmera</div>`;
+            }
+        }
+
+        function abrirGerenciar() {
+            const painel = document.getElementById('painelGerenciar');
+            painel.style.display = painel.style.display === 'none' ? 'grid' : 'none';
+            if (painel.style.display === 'grid') {
+                atualizarTabela();
+            }
+        }
+
+        function fecharGerenciar() {
+            document.getElementById('painelGerenciar').style.display = 'none';
         }
 
         // Busca produtos
@@ -857,7 +1088,7 @@
             document.getElementById('estoqueMinimo').value = ESTOQUE_MINIMO_PADRAO;
         }
 
-        // Backup automático a cada hora
+        // Backup automático
         setInterval(() => {
             const ultimoBackup = localStorage.getItem('ultimoBackup');
             const hoje = new Date().toISOString().split('T')[0];
