@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Sistema de Estoque - Corrigido</title>
+    <title>Sistema de Estoque</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
@@ -15,13 +14,10 @@
         .btn-grande { flex: 1; padding: 20px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 15px; cursor: pointer; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         .btn-vender { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; }
         .btn-adicionar { background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); color: white; }
+        .btn-excel { background: linear-gradient(135deg, #1f7b4d 0%, #0d5c38 100%); color: white; }
         .btn-grande:hover { transform: scale(1.02); }
         .header-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 15px; }
-        .alertas-baixo { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; border-left: 5px solid #f56565; }
-        .alertas-baixo h3 { color: #f56565; margin-bottom: 10px; }
-        .alerta-item { background: #fed7d7; padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .main-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .card h2 { color: #667eea; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #eee; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; color: #555; font-weight: 500; }
@@ -49,7 +45,7 @@
         #scanner-container video { width: 100%; border-radius: 10px; }
         .quantidade-modal { margin: 15px 0; }
         .quantidade-modal input { font-size: 2em; text-align: center; padding: 10px; width: 100%; }
-        @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } .botoes-principais { flex-direction: column; } .btn-grande { padding: 15px; font-size: 1em; } }
+        @media (max-width: 768px) { .botoes-principais { flex-direction: column; } .btn-grande { padding: 15px; font-size: 1em; } }
     </style>
 </head>
 <body>
@@ -57,47 +53,46 @@
         <div class="header">
             <h1>📦 Sistema de Estoque</h1>
             <div class="botoes-principais">
-                <button class="btn-grande btn-vender" onclick="abrirScannerVenda()">🛒 VENDER POR CÓDIGO</button>
-                <button class="btn-grande btn-adicionar" onclick="abrirScannerAdicionar()">➕ ADICIONAR POR CÓDIGO</button>
+                <button class="btn-grande btn-vender" onclick="abrirScannerVenda()">🛒 VENDER</button>
+                <button class="btn-grande btn-adicionar" onclick="abrirScannerAdicionar()">➕ ADICIONAR</button>
+                <button class="btn-grande btn-excel" onclick="exportarCSV()">📊 EXPORTAR RELATÓRIO</button>
             </div>
             <div class="header-buttons">
-                <button class="btn btn-info" onclick="abrirRelatorioVendas()">📊 Relatório</button>
-                <button class="btn btn-success" onclick="exportarExcel()">📎 Excel</button>
+                <button class="btn btn-info" onclick="abrirRelatorioVendas()">📊 Relatório do Dia</button>
                 <button class="btn btn-warning" onclick="fazerBackup()">💾 Backup</button>
                 <button class="btn btn-primary" onclick="abrirGerenciar()">⚙️ Gerenciar</button>
             </div>
         </div>
 
-        <div id="alertasBaixo" class="alertas-baixo" style="display: none;">
-            <h3>⚠️ PRODUTOS COM ESTOQUE BAIXO</h3>
+        <div id="alertasBaixo" class="card" style="border-left: 5px solid #f56565; display: none;">
+            <h3 style="color: #f56565;">⚠️ PRODUTOS COM ESTOQUE BAIXO</h3>
             <div id="listaAlertas"></div>
         </div>
 
-        <div class="main-grid" id="painelGerenciar" style="display: none;">
-            <div class="card">
-                <h2>📝 Gerenciar Produtos</h2>
-                <div class="form-group">
-                    <label>Código de Barras</label>
-                    <input type="text" id="codigoBarras" placeholder="Código do produto">
-                    <button class="btn btn-info" onclick="abrirScannerGerenciar()" style="margin-top: 5px;">📷 Escanear</button>
-                </div>
-                <div class="form-group"><label>Nome do Produto</label><input type="text" id="produtoNome" placeholder="Ex: Arroz, Feijão..."></div>
-                <div class="form-group"><label>Quantidade</label><input type="number" id="produtoQuantidade" placeholder="Quantidade"></div>
-                <div class="form-group"><label>Preço Unitário (R$)</label><input type="number" id="produtoPreco" step="0.01" placeholder="0.00"></div>
-                <div class="form-group"><label>Data de Validade</label><input type="date" id="dataValidade"></div>
-                <div class="form-group"><label>Estoque Mínimo</label><input type="number" id="estoqueMinimo" placeholder="Mínimo para alerta" value="5"></div>
-                <button class="btn btn-primary" onclick="adicionarProduto()">➕ Adicionar</button>
-                <button class="btn btn-warning" onclick="atualizarProduto()">🔄 Atualizar</button>
-                <button class="btn btn-danger" onclick="fecharGerenciar()">❌ Fechar</button>
+        <div class="card" id="painelGerenciar" style="display: none;">
+            <h2>📝 Gerenciar Produtos</h2>
+            <div class="form-group">
+                <label>Código de Barras</label>
+                <input type="text" id="codigoBarras" placeholder="Código do produto">
+                <button class="btn btn-info" onclick="abrirScannerGerenciar()" style="margin-top: 5px;">📷 Escanear</button>
             </div>
-            <div class="card">
-                <h2>📊 Estoque Atual</h2>
-                <div style="overflow-x: auto; max-height: 500px; overflow-y: auto;">
-                    <table id="tabelaEstoque">
-                        <thead><tr><th>Código</th><th>Produto</th><th>Qtd</th><th>Preço</th><th>Validade</th><th>Ações</th></tr></thead>
-                        <tbody id="listaEstoque"></tbody>
-                    </table>
-                </div>
+            <div class="form-group"><label>Nome do Produto</label><input type="text" id="produtoNome" placeholder="Ex: Arroz, Feijão..."></div>
+            <div class="form-group"><label>Quantidade</label><input type="number" id="produtoQuantidade" placeholder="Quantidade"></div>
+            <div class="form-group"><label>Preço Unitário (R$)</label><input type="number" id="produtoPreco" step="0.01" placeholder="0.00"></div>
+            <div class="form-group"><label>Data de Validade</label><input type="date" id="dataValidade"></div>
+            <div class="form-group"><label>Estoque Mínimo</label><input type="number" id="estoqueMinimo" placeholder="Mínimo para alerta" value="5"></div>
+            <button class="btn btn-primary" onclick="adicionarProduto()">➕ Adicionar</button>
+            <button class="btn btn-warning" onclick="atualizarProduto()">🔄 Atualizar</button>
+            <button class="btn btn-danger" onclick="fecharGerenciar()">❌ Fechar</button>
+        </div>
+
+        <div class="card">
+            <h2>📊 Estoque Atual</h2>
+            <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                <table id="tabelaEstoque">
+                    <thead><tr><th>Código</th><th>Produto</th><th>Qtd</th><th>Preço</th><th>Validade</th><th>Ações</th></tr></thead>
+                    <tbody id="listaEstoque"></tbody>
+                </table>
             </div>
         </div>
 
@@ -115,10 +110,10 @@
             <div class="form-group">
                 <label>Forma de Pagamento</label>
                 <select id="formaPagamento">
-                    <option>💵 Dinheiro</option>
-                    <option>💳 Cartão Débito</option>
-                    <option>💳 Cartão Crédito</option>
-                    <option>📱 Pix</option>
+                    <option>Dinheiro</option>
+                    <option>Cartão Débito</option>
+                    <option>Cartão Crédito</option>
+                    <option>Pix</option>
                 </select>
             </div>
             <button class="btn btn-primary" onclick="finalizarVenda()">✅ Finalizar Venda</button>
@@ -126,44 +121,14 @@
         </div>
     </div>
 
-    <div id="modalQuantidade" class="modal">
-        <div class="modal-content">
-            <h2>🛒 Vender Produto</h2>
-            <div id="produtoEscaneado"></div>
-            <div class="quantidade-modal"><label>Quantidade:</label><input type="number" id="quantidadeVenda" value="1" min="1"></div>
-            <button class="btn btn-success" onclick="confirmarVendaPorScanner()">✅ Confirmar Venda</button>
-            <button class="btn btn-danger" onclick="fecharModalQuantidade()">❌ Cancelar</button>
-        </div>
-    </div>
-
-    <div id="modalCadastro" class="modal">
-        <div class="modal-content">
-            <h2>➕ Cadastrar Novo Produto</h2>
-            <div id="codigoEscaneado"></div>
-            <div class="form-group"><label>Nome do Produto</label><input type="text" id="novoProdutoNome" placeholder="Ex: Arroz, Feijão..."></div>
-            <div class="form-group"><label>Quantidade</label><input type="number" id="novoProdutoQuantidade" placeholder="Quantidade"></div>
-            <div class="form-group"><label>Preço Unitário (R$)</label><input type="number" id="novoProdutoPreco" step="0.01" placeholder="0.00"></div>
-            <div class="form-group"><label>Data de Validade</label><input type="date" id="novoProdutoValidade"></div>
-            <button class="btn btn-primary" onclick="confirmarCadastroScanner()">✅ Cadastrar</button>
-            <button class="btn btn-danger" onclick="fecharModalCadastro()">❌ Cancelar</button>
-        </div>
-    </div>
-
-    <div id="modalScanner" class="modal">
-        <div class="modal-content">
-            <h2 id="scannerTitulo">📷 Escaneie o Código</h2>
-            <div id="scanner-container"></div>
-            <p style="margin: 10px 0; color: #666;">Aponte a câmera para o código de barras</p>
-            <button class="btn btn-danger" onclick="fecharScanner()" style="width: 100%;">❌ Cancelar</button>
-        </div>
-    </div>
-
+    <div id="modalQuantidade" class="modal"><div class="modal-content"><h2>🛒 Vender Produto</h2><div id="produtoEscaneado"></div><div class="quantidade-modal"><label>Quantidade:</label><input type="number" id="quantidadeVenda" value="1" min="1"></div><button class="btn btn-success" onclick="confirmarVendaPorScanner()">✅ Confirmar Venda</button><button class="btn btn-danger" onclick="fecharModalQuantidade()">❌ Cancelar</button></div></div>
+    <div id="modalCadastro" class="modal"><div class="modal-content"><h2>➕ Cadastrar Novo Produto</h2><div id="codigoEscaneado"></div><div class="form-group"><label>Nome</label><input type="text" id="novoProdutoNome"></div><div class="form-group"><label>Quantidade</label><input type="number" id="novoProdutoQuantidade"></div><div class="form-group"><label>Preço</label><input type="number" id="novoProdutoPreco" step="0.01"></div><div class="form-group"><label>Validade</label><input type="date" id="novoProdutoValidade"></div><button class="btn btn-primary" onclick="confirmarCadastroScanner()">✅ Cadastrar</button><button class="btn btn-danger" onclick="fecharModalCadastro()">❌ Cancelar</button></div></div>
+    <div id="modalScanner" class="modal"><div class="modal-content"><h2 id="scannerTitulo">📷 Escaneie o Código</h2><div id="scanner-container"></div><p>Aponte a câmera para o código</p><button class="btn btn-danger" onclick="fecharScanner()">❌ Cancelar</button></div></div>
     <div id="modalRelatorio" class="modal"><div class="modal-content"><h2>📊 Relatório de Vendas do Dia</h2><div id="relatorioConteudo"></div><button class="btn btn-primary" onclick="fecharRelatorio()">Fechar</button></div></div>
     <div id="notaFiscal" class="modal"><div class="modal-content"><h2>🧾 NOTA FISCAL</h2><div id="notaConteudo"></div><button class="btn btn-primary" onclick="fecharNotaFiscal()">Fechar</button><button class="btn btn-success" onclick="imprimirNotaAtual()">🖨️ Imprimir</button></div></div>
     <div id="alertToast" class="alert"></div>
 
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <script>
         let estoque = JSON.parse(localStorage.getItem('estoque')) || {};
@@ -175,302 +140,123 @@
         let modoScanner = null;
         const ESTOQUE_MINIMO_PADRAO = 5;
 
-        // Função para normalizar código (remover espaços, quebras de linha, etc)
-        function normalizarCodigo(codigo) {
-            if (!codigo) return '';
-            // Remove espaços, quebras de linha, tabs, e converte para string
-            return String(codigo).trim().replace(/\s+/g, '');
-        }
-
-        function mostrarAlerta(msg, tipo) {
-            const alert = document.getElementById('alertToast');
-            alert.className = `alert alert-${tipo}`;
-            alert.innerHTML = msg;
-            alert.style.display = 'block';
-            setTimeout(() => alert.style.display = 'none', 3000);
-        }
-
-        function salvarEstoque() {
-            localStorage.setItem('estoque', JSON.stringify(estoque));
-            atualizarTabela();
-            verificarEstoqueBaixo();
-        }
-
+        function normalizarCodigo(codigo) { if (!codigo) return ''; return String(codigo).trim().replace(/\s+/g, ''); }
+        function mostrarAlerta(msg, tipo) { const alert = document.getElementById('alertToast'); alert.className = `alert alert-${tipo}`; alert.innerHTML = msg; alert.style.display = 'block'; setTimeout(() => alert.style.display = 'none', 3000); }
+        function salvarEstoque() { localStorage.setItem('estoque', JSON.stringify(estoque)); atualizarTabela(); verificarEstoqueBaixo(); }
+        
         function verificarEstoqueBaixo() {
             const alertas = [];
             for (const [codigo, dados] of Object.entries(estoque)) {
                 const minimo = dados.estoqueMinimo || ESTOQUE_MINIMO_PADRAO;
-                if (dados.quantidade <= minimo) {
-                    alertas.push({ codigo, nome: dados.nome, quantidade: dados.quantidade, minimo });
-                }
+                if (dados.quantidade <= minimo) alertas.push({ codigo, nome: dados.nome, quantidade: dados.quantidade, minimo });
             }
             const alertasDiv = document.getElementById('alertasBaixo');
             const listaAlertas = document.getElementById('listaAlertas');
             if (alertas.length > 0) {
                 alertasDiv.style.display = 'block';
-                listaAlertas.innerHTML = alertas.map(a => `<div class="alerta-item"><span>⚠️ ${a.nome} - Estoque: ${a.quantidade} (Mínimo: ${a.minimo})</span><button class="btn btn-primary" onclick="reporEstoque('${a.codigo}')" style="padding: 5px 10px;">📦 Repor</button></div>`).join('');
-            } else {
-                alertasDiv.style.display = 'none';
-            }
+                listaAlertas.innerHTML = alertas.map(a => `<div style="background:#fed7d7; padding:10px; margin:5px 0; border-radius:8px; display:flex; justify-content:space-between;"><span>⚠️ ${a.nome}: ${a.quantidade} (Mínimo: ${a.minimo})</span><button class="btn btn-primary" onclick="reporEstoque('${a.codigo}')">📦 Repor</button></div>`).join('');
+            } else { alertasDiv.style.display = 'none'; }
         }
 
-        function reporEstoque(codigo) {
-            const qtd = prompt('Quantidade para adicionar?');
-            if (qtd && !isNaN(qtd)) {
-                estoque[codigo].quantidade += parseInt(qtd);
-                salvarEstoque();
-                mostrarAlerta(`✅ Reposto ${qtd} unidades`, 'success');
-            }
-        }
-
+        function reporEstoque(codigo) { const qtd = prompt('Quantidade?'); if (qtd && !isNaN(qtd)) { estoque[codigo].quantidade += parseInt(qtd); salvarEstoque(); mostrarAlerta(`✅ Reposto ${qtd} unidades`, 'success'); } }
+        
         function adicionarProduto() {
-            let codigo = document.getElementById('codigoBarras').value;
-            codigo = normalizarCodigo(codigo);
+            let codigo = normalizarCodigo(document.getElementById('codigoBarras').value);
             const nome = document.getElementById('produtoNome').value.trim().toLowerCase();
             const quantidade = parseInt(document.getElementById('produtoQuantidade').value);
             const preco = parseFloat(document.getElementById('produtoPreco').value);
             const validade = document.getElementById('dataValidade').value;
             const estoqueMinimo = parseInt(document.getElementById('estoqueMinimo').value) || ESTOQUE_MINIMO_PADRAO;
-            
-            if (!codigo || !nome || !quantidade || !preco) {
-                mostrarAlerta('Preencha todos os campos!', 'error');
-                return;
-            }
-            
-            if (estoque[codigo]) {
-                mostrarAlerta('Código já existe! Use atualizar.', 'error');
-                return;
-            }
-            
+            if (!codigo || !nome || !quantidade || !preco) { mostrarAlerta('Preencha todos os campos!', 'error'); return; }
+            if (estoque[codigo]) { mostrarAlerta('Código já existe!', 'error'); return; }
             estoque[codigo] = { nome, quantidade, preco, validade, estoqueMinimo };
             salvarEstoque();
             mostrarAlerta(`✅ ${nome} adicionado!`, 'success');
             limparFormulario();
         }
-
+        
         function atualizarProduto() {
-            let codigo = document.getElementById('codigoBarras').value;
-            codigo = normalizarCodigo(codigo);
-            if (!codigo || !estoque[codigo]) {
-                mostrarAlerta('Produto não encontrado!', 'error');
-                return;
-            }
-            
+            let codigo = normalizarCodigo(document.getElementById('codigoBarras').value);
+            if (!codigo || !estoque[codigo]) { mostrarAlerta('Produto não encontrado!', 'error'); return; }
             const nome = document.getElementById('produtoNome').value.trim().toLowerCase();
             const quantidade = parseInt(document.getElementById('produtoQuantidade').value);
             const preco = parseFloat(document.getElementById('produtoPreco').value);
             const validade = document.getElementById('dataValidade').value;
             const estoqueMinimo = parseInt(document.getElementById('estoqueMinimo').value) || ESTOQUE_MINIMO_PADRAO;
-            
             estoque[codigo] = { ...estoque[codigo], nome, quantidade, preco, validade, estoqueMinimo };
             salvarEstoque();
             mostrarAlerta(`✅ ${nome} atualizado!`, 'success');
-            limparFormulario();
         }
-
-        function removerProduto(codigo) {
-            if (confirm(`Remover ${estoque[codigo].nome}?`)) {
-                delete estoque[codigo];
-                salvarEstoque();
-                mostrarAlerta(`🗑️ Produto removido!`, 'success');
-            }
-        }
-
-        function carregarProduto(codigo) {
-            const p = estoque[codigo];
-            document.getElementById('codigoBarras').value = codigo;
-            document.getElementById('produtoNome').value = p.nome;
-            document.getElementById('produtoQuantidade').value = p.quantidade;
-            document.getElementById('produtoPreco').value = p.preco;
-            document.getElementById('dataValidade').value = p.validade || '';
-            document.getElementById('estoqueMinimo').value = p.estoqueMinimo || ESTOQUE_MINIMO_PADRAO;
-        }
-
-        function abrirScannerVenda() {
-            modoScanner = 'venda';
-            document.getElementById('scannerTitulo').innerHTML = '🛒 Escaneie para VENDER';
-            abrirScanner();
-        }
-
-        function abrirScannerAdicionar() {
-            modoScanner = 'adicionar';
-            document.getElementById('scannerTitulo').innerHTML = '➕ Escaneie para ADICIONAR';
-            abrirScanner();
-        }
-
+        
+        function removerProduto(codigo) { if (confirm(`Remover ${estoque[codigo].nome}?`)) { delete estoque[codigo]; salvarEstoque(); mostrarAlerta(`🗑️ Removido!`, 'success'); } }
+        function carregarProduto(codigo) { const p = estoque[codigo]; document.getElementById('codigoBarras').value = codigo; document.getElementById('produtoNome').value = p.nome; document.getElementById('produtoQuantidade').value = p.quantidade; document.getElementById('produtoPreco').value = p.preco; document.getElementById('dataValidade').value = p.validade || ''; document.getElementById('estoqueMinimo').value = p.estoqueMinimo || ESTOQUE_MINIMO_PADRAO; }
+        
+        function abrirScannerVenda() { modoScanner = 'venda'; document.getElementById('scannerTitulo').innerHTML = '🛒 Escaneie para VENDER'; abrirScanner(); }
+        function abrirScannerAdicionar() { modoScanner = 'adicionar'; document.getElementById('scannerTitulo').innerHTML = '➕ Escaneie para ADICIONAR'; abrirScanner(); }
+        
         function abrirScanner() {
             const modal = document.getElementById('modalScanner');
             modal.style.display = 'flex';
             const container = document.getElementById('scanner-container');
             container.innerHTML = '<div style="text-align: center; padding: 20px;">📷 Iniciando câmera...</div>';
-            
             try {
-                if (typeof Html5Qrcode === 'undefined') {
-                    container.innerHTML = '<div style="color: red;">Erro: Biblioteca não carregada.</div>';
-                    return;
-                }
-                
                 html5QrCode = new Html5Qrcode("scanner-container");
                 scannerAtivo = true;
-                const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
-                
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    config,
-                    (decodedText) => {
-                        // NORMALIZAR O CÓDIGO LIDO (remover espaços, quebras)
-                        const codigoLido = normalizarCodigo(decodedText);
-                        console.log('Código lido (normalizado):', codigoLido);
-                        console.log('Estoque disponível:', Object.keys(estoque));
-                        
-                        ultimoCodigoEscaneado = codigoLido;
-                        fecharScanner();
-                        
-                        if (modoScanner === 'venda') {
-                            // MODO VENDA - procurar o código normalizado
-                            let produtoEncontrado = null;
-                            let codigoEncontrado = null;
-                            
-                            // Procurar em todas as chaves do estoque (normalizando cada uma)
-                            for (const [codigoEstoque, produto] of Object.entries(estoque)) {
-                                const codigoNormalizado = normalizarCodigo(codigoEstoque);
-                                if (codigoNormalizado === codigoLido) {
-                                    produtoEncontrado = produto;
-                                    codigoEncontrado = codigoEstoque;
-                                    break;
-                                }
-                            }
-                            
-                            if (produtoEncontrado) {
-                                document.getElementById('produtoEscaneado').innerHTML = `
-                                    <p><strong>${produtoEncontrado.nome}</strong></p>
-                                    <p>Preço: R$ ${produtoEncontrado.preco.toFixed(2)}</p>
-                                    <p>Estoque disponível: ${produtoEncontrado.quantidade}</p>
-                                `;
-                                document.getElementById('quantidadeVenda').value = 1;
-                                document.getElementById('quantidadeVenda').max = produtoEncontrado.quantidade;
-                                document.getElementById('modalQuantidade').style.display = 'flex';
-                                // Guarda o código original do estoque para usar na venda
-                                ultimoCodigoEscaneado = codigoEncontrado;
-                            } else {
-                                mostrarAlerta(`❌ Produto com código ${codigoLido} não cadastrado!`, 'error');
-                                setTimeout(() => {
-                                    abrirGerenciar();
-                                    document.getElementById('codigoBarras').value = codigoLido;
-                                    document.getElementById('produtoNome').focus();
-                                }, 2000);
-                            }
-                        } else if (modoScanner === 'adicionar') {
-                            // MODO ADICIONAR
-                            let existe = false;
-                            for (const [codigoEstoque] of Object.entries(estoque)) {
-                                if (normalizarCodigo(codigoEstoque) === codigoLido) {
-                                    existe = true;
-                                    break;
-                                }
-                            }
-                            
-                            if (existe) {
-                                mostrarAlerta(`⚠️ Produto já existe! Use o modo VENDA ou atualize.`, 'error');
-                                setTimeout(() => {
-                                    abrirGerenciar();
-                                    // Encontrar o código original para carregar
-                                    for (const [codigoEstoque, produto] of Object.entries(estoque)) {
-                                        if (normalizarCodigo(codigoEstoque) === codigoLido) {
-                                            carregarProduto(codigoEstoque);
-                                            break;
-                                        }
-                                    }
-                                }, 1500);
-                            } else {
-                                document.getElementById('codigoEscaneado').innerHTML = `<p><strong>Código: ${codigoLido}</strong></p>`;
-                                document.getElementById('novoProdutoNome').value = '';
-                                document.getElementById('novoProdutoQuantidade').value = '';
-                                document.getElementById('novoProdutoPreco').value = '';
-                                document.getElementById('novoProdutoValidade').value = '';
-                                document.getElementById('modalCadastro').style.display = 'flex';
-                            }
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (decodedText) => {
+                    const codigoLido = normalizarCodigo(decodedText);
+                    ultimoCodigoEscaneado = codigoLido;
+                    fecharScanner();
+                    if (modoScanner === 'venda') {
+                        let produtoEncontrado = null, codigoEncontrado = null;
+                        for (const [codigoEstoque, produto] of Object.entries(estoque)) {
+                            if (normalizarCodigo(codigoEstoque) === codigoLido) { produtoEncontrado = produto; codigoEncontrado = codigoEstoque; break; }
                         }
-                    },
-                    (errorMessage) => { console.log("Aguardando leitura..."); }
-                );
-            } catch (err) {
-                container.innerHTML = `<div style="color: red; padding: 20px;">❌ Erro ao acessar a câmera.</div>`;
-                mostrarAlerta('❌ Erro ao acessar a câmera', 'error');
-            }
+                        if (produtoEncontrado) {
+                            document.getElementById('produtoEscaneado').innerHTML = `<p><strong>${produtoEncontrado.nome}</strong></p><p>Preço: R$ ${produtoEncontrado.preco.toFixed(2)}</p><p>Estoque: ${produtoEncontrado.quantidade}</p>`;
+                            document.getElementById('quantidadeVenda').value = 1;
+                            document.getElementById('quantidadeVenda').max = produtoEncontrado.quantidade;
+                            document.getElementById('modalQuantidade').style.display = 'flex';
+                            ultimoCodigoEscaneado = codigoEncontrado;
+                        } else { mostrarAlerta(`❌ Produto não cadastrado!`, 'error'); setTimeout(() => { abrirGerenciar(); document.getElementById('codigoBarras').value = codigoLido; }, 2000); }
+                    } else if (modoScanner === 'adicionar') {
+                        let existe = false;
+                        for (const [codigoEstoque] of Object.entries(estoque)) { if (normalizarCodigo(codigoEstoque) === codigoLido) { existe = true; break; } }
+                        if (existe) { mostrarAlerta(`⚠️ Produto já existe!`, 'error'); } 
+                        else { document.getElementById('codigoEscaneado').innerHTML = `<p><strong>Código: ${codigoLido}</strong></p>`; document.getElementById('modalCadastro').style.display = 'flex'; }
+                    }
+                }, () => {});
+            } catch (err) { container.innerHTML = '<div style="color: red;">❌ Erro na câmera</div>'; }
         }
 
         function confirmarVendaPorScanner() {
             const quantidade = parseInt(document.getElementById('quantidadeVenda').value);
             const codigo = ultimoCodigoEscaneado;
-            
-            if (!codigo || !estoque[codigo]) {
-                mostrarAlerta('Produto não encontrado!', 'error');
-                fecharModalQuantidade();
-                return;
-            }
-            
-            if (quantidade > estoque[codigo].quantidade) {
-                mostrarAlerta(`Estoque insuficiente! Temos apenas ${estoque[codigo].quantidade}`, 'error');
-                return;
-            }
-            
+            if (!codigo || !estoque[codigo]) { mostrarAlerta('Produto não encontrado!', 'error'); fecharModalQuantidade(); return; }
+            if (quantidade > estoque[codigo].quantidade) { mostrarAlerta(`Estoque insuficiente!`, 'error'); return; }
             const existente = carrinho.find(item => item.codigo === codigo);
-            if (existente) {
-                existente.quantidade += quantidade;
-            } else {
-                carrinho.push({ codigo, nome: estoque[codigo].nome, quantidade, preco: estoque[codigo].preco });
-            }
-            
-            mostrarAlerta(`✅ ${quantidade}x ${estoque[codigo].nome} adicionado ao carrinho!`, 'success');
+            if (existente) { existente.quantidade += quantidade; } else { carrinho.push({ codigo, nome: estoque[codigo].nome, quantidade, preco: estoque[codigo].preco }); }
+            mostrarAlerta(`✅ ${quantidade}x ${estoque[codigo].nome} adicionado!`, 'success');
             atualizarCarrinho();
             fecharModalQuantidade();
         }
-
+        
         function confirmarCadastroScanner() {
             const codigo = ultimoCodigoEscaneado;
             const nome = document.getElementById('novoProdutoNome').value.trim().toLowerCase();
             const quantidade = parseInt(document.getElementById('novoProdutoQuantidade').value);
             const preco = parseFloat(document.getElementById('novoProdutoPreco').value);
             const validade = document.getElementById('novoProdutoValidade').value;
-            
-            if (!nome || !quantidade || !preco) {
-                mostrarAlerta('Preencha nome, quantidade e preço!', 'error');
-                return;
-            }
-            
+            if (!nome || !quantidade || !preco) { mostrarAlerta('Preencha todos os campos!', 'error'); return; }
             estoque[codigo] = { nome, quantidade, preco, validade, estoqueMinimo: ESTOQUE_MINIMO_PADRAO };
             salvarEstoque();
-            mostrarAlerta(`✅ ${nome} cadastrado com sucesso!`, 'success');
+            mostrarAlerta(`✅ ${nome} cadastrado!`, 'success');
             fecharModalCadastro();
         }
-
-        function fecharModalQuantidade() {
-            document.getElementById('modalQuantidade').style.display = 'none';
-            ultimoCodigoEscaneado = null;
-        }
-
-        function fecharModalCadastro() {
-            document.getElementById('modalCadastro').style.display = 'none';
-            ultimoCodigoEscaneado = null;
-        }
-
-        function fecharScanner() {
-            if (html5QrCode && scannerAtivo) {
-                html5QrCode.stop().then(() => {
-                    scannerAtivo = false;
-                    document.getElementById('modalScanner').style.display = 'none';
-                    document.getElementById('scanner-container').innerHTML = '';
-                }).catch(() => {
-                    document.getElementById('modalScanner').style.display = 'none';
-                    document.getElementById('scanner-container').innerHTML = '';
-                });
-            } else {
-                document.getElementById('modalScanner').style.display = 'none';
-                document.getElementById('scanner-container').innerHTML = '';
-            }
-        }
-
+        
+        function fecharModalQuantidade() { document.getElementById('modalQuantidade').style.display = 'none'; ultimoCodigoEscaneado = null; }
+        function fecharModalCadastro() { document.getElementById('modalCadastro').style.display = 'none'; ultimoCodigoEscaneado = null; }
+        function fecharScanner() { if (html5QrCode && scannerAtivo) { html5QrCode.stop().then(() => { scannerAtivo = false; document.getElementById('modalScanner').style.display = 'none'; document.getElementById('scanner-container').innerHTML = ''; }); } else { document.getElementById('modalScanner').style.display = 'none'; } }
+        
         function abrirScannerGerenciar() {
             modoScanner = 'gerenciar';
             document.getElementById('scannerTitulo').innerHTML = '⚙️ Escaneie para GERENCIAR';
@@ -478,51 +264,25 @@
             modal.style.display = 'flex';
             const container = document.getElementById('scanner-container');
             container.innerHTML = '<div style="text-align: center; padding: 20px;">📷 Iniciando câmera...</div>';
-            
             try {
                 html5QrCode = new Html5Qrcode("scanner-container");
                 scannerAtivo = true;
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: 250 },
-                    (decodedText) => {
-                        const codigoLido = normalizarCodigo(decodedText);
-                        document.getElementById('codigoBarras').value = codigoLido;
-                        
-                        let encontrado = false;
-                        for (const [codigoEstoque, produto] of Object.entries(estoque)) {
-                            if (normalizarCodigo(codigoEstoque) === codigoLido) {
-                                carregarProduto(codigoEstoque);
-                                mostrarAlerta(`✅ Produto encontrado: ${produto.nome}`, 'success');
-                                encontrado = true;
-                                break;
-                            }
-                        }
-                        if (!encontrado) {
-                            mostrarAlerta(`Código ${codigoLido} - Preencha os dados para cadastrar`, 'info');
-                            document.getElementById('produtoNome').focus();
-                        }
-                        fecharScanner();
-                    },
-                    (errorMessage) => {}
-                );
-            } catch (err) {
-                container.innerHTML = `<div style="color: red; padding: 20px;">❌ Erro na câmera</div>`;
-            }
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
+                    const codigoLido = normalizarCodigo(decodedText);
+                    document.getElementById('codigoBarras').value = codigoLido;
+                    let encontrado = false;
+                    for (const [codigoEstoque, produto] of Object.entries(estoque)) {
+                        if (normalizarCodigo(codigoEstoque) === codigoLido) { carregarProduto(codigoEstoque); mostrarAlerta(`✅ ${produto.nome}`, 'success'); encontrado = true; break; }
+                    }
+                    if (!encontrado) mostrarAlerta(`Código novo - Preencha os dados`, 'info');
+                    fecharScanner();
+                }, () => {});
+            } catch (err) { container.innerHTML = '<div style="color: red;">❌ Erro</div>'; }
         }
-
-        function abrirGerenciar() {
-            const painel = document.getElementById('painelGerenciar');
-            painel.style.display = painel.style.display === 'none' ? 'grid' : 'none';
-            if (painel.style.display === 'grid') {
-                atualizarTabela();
-            }
-        }
-
-        function fecharGerenciar() {
-            document.getElementById('painelGerenciar').style.display = 'none';
-        }
-
+        
+        function abrirGerenciar() { const painel = document.getElementById('painelGerenciar'); painel.style.display = painel.style.display === 'none' ? 'block' : 'none'; if (painel.style.display === 'block') atualizarTabela(); }
+        function fecharGerenciar() { document.getElementById('painelGerenciar').style.display = 'none'; }
+        
         document.getElementById('buscaProduto').addEventListener('keyup', function() {
             const termo = this.value.toLowerCase();
             const sugestoes = document.getElementById('sugestoesProdutos');
@@ -530,51 +290,33 @@
             const resultados = Object.entries(estoque).filter(([codigo, p]) => p.nome.includes(termo) || codigo.includes(termo));
             if (resultados.length > 0) {
                 sugestoes.style.display = 'block';
-                sugestoes.innerHTML = resultados.map(([codigo, p]) => `<div style="padding: 10px; cursor: pointer; border-bottom: 1px solid #ddd;" onclick="selecionarProduto('${codigo}')">📦 ${p.nome} - R$ ${p.preco.toFixed(2)} (Estoque: ${p.quantidade})</div>`).join('');
+                sugestoes.innerHTML = resultados.map(([codigo, p]) => `<div style="padding:10px;cursor:pointer;border-bottom:1px solid #ddd;" onclick="selecionarProduto('${codigo}')">📦 ${p.nome} - R$ ${p.preco.toFixed(2)} (${p.quantidade})</div>`).join('');
             } else { sugestoes.style.display = 'none'; }
         });
-
-        function selecionarProduto(codigo) {
-            document.getElementById('buscaProduto').value = estoque[codigo].nome;
-            document.getElementById('sugestoesProdutos').style.display = 'none';
-            const qtd = prompt('Quantidade:', '1');
-            if (qtd && !isNaN(qtd)) { adicionarAoCarrinho(codigo, parseInt(qtd)); }
-        }
-
-        function adicionarAoCarrinho(codigo, quantidade) {
-            if (!estoque[codigo]) { mostrarAlerta(`❌ Produto não encontrado!`, 'error'); return; }
-            if (quantidade > estoque[codigo].quantidade) { mostrarAlerta(`❌ Estoque insuficiente! Temos ${estoque[codigo].quantidade}`, 'error'); return; }
-            const existente = carrinho.find(item => item.codigo === codigo);
-            if (existente) { existente.quantidade += quantidade; } 
-            else { carrinho.push({ codigo, nome: estoque[codigo].nome, quantidade, preco: estoque[codigo].preco }); }
-            mostrarAlerta(`✅ ${quantidade}x ${estoque[codigo].nome} adicionado!`, 'success');
-            atualizarCarrinho();
-        }
-
+        
+        function selecionarProduto(codigo) { document.getElementById('buscaProduto').value = estoque[codigo].nome; document.getElementById('sugestoesProdutos').style.display = 'none'; const qtd = prompt('Quantidade:', '1'); if (qtd && !isNaN(qtd)) adicionarAoCarrinho(codigo, parseInt(qtd)); }
+        function adicionarAoCarrinho(codigo, quantidade) { if (!estoque[codigo]) { mostrarAlerta('Produto não encontrado!', 'error'); return; } if (quantidade > estoque[codigo].quantidade) { mostrarAlerta(`Estoque insuficiente!`, 'error'); return; } const existente = carrinho.find(item => item.codigo === codigo); if (existente) { existente.quantidade += quantidade; } else { carrinho.push({ codigo, nome: estoque[codigo].nome, quantidade, preco: estoque[codigo].preco }); } mostrarAlerta(`✅ ${quantidade}x ${estoque[codigo].nome}`, 'success'); atualizarCarrinho(); }
+        
         function atualizarCarrinho() {
             const div = document.getElementById('carrinhoItens');
             const totalDiv = document.getElementById('totalCarrinho');
             const totalSpan = document.getElementById('totalVenda');
-            if (carrinho.length === 0) { div.innerHTML = '<p style="text-align:center; color:#999;">Carrinho vazio</p>'; totalDiv.style.display = 'none'; return; }
-            let html = ''; let total = 0;
-            carrinho.forEach((item, idx) => {
-                const subtotal = item.quantidade * item.preco;
-                total += subtotal;
-                html += `<div class="carrinho-item"><div><strong>${item.nome}</strong><br>${item.quantidade} x R$ ${item.preco.toFixed(2)}</div><div>R$ ${subtotal.toFixed(2)} <button onclick="removerDoCarrinho(${idx})" style="background:#fc8181; border:none; padding:5px 10px;">❌</button></div></div>`;
-            });
+            if (carrinho.length === 0) { div.innerHTML = '<p style="text-align:center;">Carrinho vazio</p>'; totalDiv.style.display = 'none'; return; }
+            let html = '', total = 0;
+            carrinho.forEach((item, idx) => { const subtotal = item.quantidade * item.preco; total += subtotal; html += `<div class="carrinho-item"><div><strong>${item.nome}</strong><br>${item.quantidade} x R$ ${item.preco.toFixed(2)}</div><div>R$ ${subtotal.toFixed(2)} <button onclick="removerDoCarrinho(${idx})" style="background:#fc8181; border:none; padding:5px 10px;">❌</button></div></div>`; });
             div.innerHTML = html;
             totalSpan.textContent = total.toFixed(2);
             totalDiv.style.display = 'block';
         }
-
+        
         function removerDoCarrinho(idx) { carrinho.splice(idx, 1); atualizarCarrinho(); }
-
+        
         function finalizarVenda() {
             if (carrinho.length === 0) { mostrarAlerta('Carrinho vazio!', 'error'); return; }
             const forma = document.getElementById('formaPagamento').value;
             let total = 0;
             for (const item of carrinho) { estoque[item.codigo].quantidade -= item.quantidade; total += item.quantidade * item.preco; }
-            const venda = { id: Date.now(), data: new Date().toISOString(), itens: [...carrinho], total: total, formaPagamento: forma };
+            const venda = { id: Date.now(), data: new Date().toISOString(), itens: [...carrinho], total, formaPagamento: forma };
             vendasDiarias.push(venda);
             localStorage.setItem('vendasDiarias', JSON.stringify(vendasDiarias));
             salvarEstoque();
@@ -583,74 +325,161 @@
             mostrarAlerta(`✅ Venda finalizada! Total: R$ ${total.toFixed(2)}`, 'success');
             exibirNotaFiscal(venda);
         }
-
+        
         let ultimaNotaFiscal = null;
-        function exibirNotaFiscal(venda) {
-            ultimaNotaFiscal = venda;
-            const data = new Date(venda.data).toLocaleString('pt-BR');
-            let html = `<div style="text-align:center;"><h3>NOTA FISCAL</h3><p>Data: ${data}</p><hr></div>`;
-            for (const item of venda.itens) { html += `<p>${item.nome}: ${item.quantidade} x R$ ${item.preco.toFixed(2)} = R$ ${(item.quantidade * item.preco).toFixed(2)}</p>`; }
-            html += `<hr><p><strong>TOTAL: R$ ${venda.total.toFixed(2)}</strong></p><p><strong>PAGAMENTO: ${venda.formaPagamento}</strong></p><hr><div style="text-align:center;"><p>Obrigado!</p></div>`;
-            document.getElementById('notaConteudo').innerHTML = html;
-            document.getElementById('notaFiscal').style.display = 'flex';
-        }
-
+        function exibirNotaFiscal(venda) { ultimaNotaFiscal = venda; const data = new Date(venda.data).toLocaleString('pt-BR'); let html = `<div style="text-align:center;"><h3>NOTA FISCAL</h3><p>Data: ${data}</p><hr></div>`; for (const item of venda.itens) html += `<p>${item.nome}: ${item.quantidade} x R$ ${item.preco.toFixed(2)} = R$ ${(item.quantidade * item.preco).toFixed(2)}</p>`; html += `<hr><p><strong>TOTAL: R$ ${venda.total.toFixed(2)}</strong></p><p><strong>PAGAMENTO: ${venda.formaPagamento}</strong></p><hr><p>Obrigado!</p>`; document.getElementById('notaConteudo').innerHTML = html; document.getElementById('notaFiscal').style.display = 'flex'; }
         function fecharNotaFiscal() { document.getElementById('notaFiscal').style.display = 'none'; }
-        function imprimirNotaAtual() {
-            if (ultimaNotaFiscal) {
-                const data = new Date(ultimaNotaFiscal.data).toLocaleString('pt-BR');
-                let conteudo = `<div style="text-align:center; font-family: monospace;"><h3>NOTA FISCAL</h3><p>Data: ${data}</p><hr>`;
-                for (const item of ultimaNotaFiscal.itens) { conteudo += `<p>${item.nome}: ${item.quantidade} x R$ ${item.preco.toFixed(2)} = R$ ${(item.quantidade * item.preco).toFixed(2)}</p>`; }
-                conteudo += `<hr><p><strong>TOTAL: R$ ${ultimaNotaFiscal.total.toFixed(2)}</strong></p><p><strong>PAGAMENTO: ${ultimaNotaFiscal.formaPagamento}</strong></p><hr><p>Obrigado!</p></div>`;
-                const janela = window.open('', '_blank');
-                janela.document.write(conteudo);
-                janela.document.close();
-                janela.print();
-            } else { mostrarAlerta('Nenhuma nota fiscal para imprimir!', 'error'); }
-        }
-
-        function imprimirNotaFiscal() {
-            if (carrinho.length === 0) { mostrarAlerta('Carrinho vazio!', 'error'); return; }
-            const total = carrinho.reduce((t, i) => t + (i.quantidade * i.preco), 0);
-            const forma = document.getElementById('formaPagamento').value;
-            const data = new Date().toLocaleString('pt-BR');
-            let conteudo = `<div style="text-align:center; font-family: monospace;"><h3>NOTA FISCAL</h3><p>Data: ${data}</p><hr>`;
-            for (const item of carrinho) { conteudo += `<p>${item.nome}: ${item.quantidade} x R$ ${item.preco.toFixed(2)} = R$ ${(item.quantidade * item.preco).toFixed(2)}</p>`; }
-            conteudo += `<hr><p><strong>TOTAL: R$ ${total.toFixed(2)}</strong></p><p><strong>PAGAMENTO: ${forma}</strong></p><hr><p>Obrigado!</p></div>`;
-            const janela = window.open('', '_blank');
-            janela.document.write(conteudo);
-            janela.document.close();
-            janela.print();
-        }
-
+        function imprimirNotaAtual() { if (ultimaNotaFiscal) { const janela = window.open('', '_blank'); janela.document.write(`<div style="text-align:center;"><h3>NOTA FISCAL</h3><p>${new Date(ultimaNotaFiscal.data).toLocaleString('pt-BR')}</p><hr>${ultimaNotaFiscal.itens.map(i => `<p>${i.nome}: ${i.quantidade} x R$ ${i.preco.toFixed(2)} = R$ ${(i.quantidade * i.preco).toFixed(2)}</p>`).join('')}<hr><p><strong>TOTAL: R$ ${ultimaNotaFiscal.total.toFixed(2)}</strong></p><p>PAGAMENTO: ${ultimaNotaFiscal.formaPagamento}</p><hr><p>Obrigado!</p></div>`); janela.document.close(); janela.print(); } }
+        function imprimirNotaFiscal() { if (carrinho.length === 0) return; const janela = window.open('', '_blank'); const total = carrinho.reduce((t, i) => t + (i.quantidade * i.preco), 0); janela.document.write(`<div style="text-align:center;"><h3>NOTA FISCAL</h3><p>${new Date().toLocaleString('pt-BR')}</p><hr>${carrinho.map(i => `<p>${i.nome}: ${i.quantidade} x R$ ${i.preco.toFixed(2)} = R$ ${(i.quantidade * i.preco).toFixed(2)}</p>`).join('')}<hr><p><strong>TOTAL: R$ ${total.toFixed(2)}</strong></p><p>PAGAMENTO: ${document.getElementById('formaPagamento').value}</p><hr><p>Obrigado!</p></div>`); janela.document.close(); janela.print(); }
+        
         function abrirRelatorioVendas() {
             const hoje = new Date().toISOString().split('T')[0];
             const vendasHoje = vendasDiarias.filter(v => v.data.split('T')[0] === hoje);
             let totalDia = 0;
             let html = `<h3>📅 ${new Date().toLocaleDateString('pt-BR')}</h3><p>Total de vendas: ${vendasHoje.length}</p><hr>`;
-            for (const venda of vendasHoje) {
-                totalDia += venda.total;
-                html += `<div style="border:1px solid #ddd; padding:10px; margin:10px 0;"><p>🕒 ${new Date(venda.data).toLocaleTimeString('pt-BR')}</p><p>💰 Total: R$ ${venda.total.toFixed(2)}</p><p>💳 Pagamento: ${venda.formaPagamento}</p><details><summary>📋 Itens</summary>`;
-                for (const item of venda.itens) { html += `<p>${item.nome}: ${item.quantidade} x R$ ${item.preco.toFixed(2)}</p>`; }
-                html += `</details></div>`;
-            }
+            for (const venda of vendasHoje) { totalDia += venda.total; html += `<div style="border:1px solid #ddd; padding:10px; margin:10px 0;"><p>🕒 ${new Date(venda.data).toLocaleTimeString('pt-BR')}</p><p>💰 R$ ${venda.total.toFixed(2)}</p><p>💳 ${venda.formaPagamento}</p><details><summary>📋 Itens</summary>${venda.itens.map(i => `<p>${i.nome}: ${i.quantidade} x R$ ${i.preco.toFixed(2)}</p>`).join('')}</details></div>`; }
             html += `<hr><h3>TOTAL DO DIA: R$ ${totalDia.toFixed(2)}</h3>`;
             document.getElementById('relatorioConteudo').innerHTML = html;
             document.getElementById('modalRelatorio').style.display = 'flex';
         }
-
+        
         function fecharRelatorio() { document.getElementById('modalRelatorio').style.display = 'none'; }
 
-        function exportarExcel() {
-            const dados = [['Código', 'Produto', 'Quantidade', 'Preço', 'Validade', 'Estoque Mínimo']];
-            for (const [codigo, p] of Object.entries(estoque)) { dados.push([codigo, p.nome, p.quantidade, p.preco, p.validade || 'N/A', p.estoqueMinimo || ESTOQUE_MINIMO_PADRAO]); }
-            const ws = XLSX.utils.aoa_to_sheet(dados);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Estoque');
-            XLSX.writeFile(wb, `estoque_${new Date().toISOString().split('T')[0]}.xlsx`);
-            mostrarAlerta('✅ Arquivo exportado!', 'success');
-        }
 
+        // Funções auxiliares - coloque ANTES da função exportarCSV
+function calcularValorEstoque() {
+    let total = 0;
+    for (let [cod, p] of Object.entries(estoque)) {
+        total += p.quantidade * p.preco;
+    }
+    return total;
+}
+
+function calcularTotalVendas() {
+    let total = 0;
+    for (let venda of vendasDiarias) {
+        total += venda.total;
+    }
+    return total;
+}
+
+function calcularTicketMedio() {
+    if (vendasDiarias.length === 0) return 0;
+    return calcularTotalVendas() / vendasDiarias.length;
+}
+        
+        // FUNÇÃO DE EXPORTAR CSV CORRIGIDA - SEM toUpperCase() PROBLEMÁTICO
+       function exportarCSV() {
+    try {
+        mostrarAlerta('📊 Gerando relatório Excel...', 'info');
+        
+        if (typeof XLSX === 'undefined') {
+            mostrarAlerta('Erro: Biblioteca Excel não carregada. Recarregue a página.', 'error');
+            return;
+        }
+        
+        let dataHoje = new Date();
+        let dataStr = dataHoje.toISOString().split('T')[0];
+        
+        // Criar workbook
+        let wb = XLSX.utils.book_new();
+        
+        // ========== 1. PLANILHA DASHBOARD ==========
+        let dashboardData = [
+            ['RELATÓRIO DE ESTOQUE E VENDAS', ''],
+            ['Gerado em:', dataHoje.toLocaleString('pt-BR')],
+            ['', ''],
+            ['📊 DASHBOARD EXECUTIVO', ''],
+            ['Indicador', 'Valor'],
+            ['Total de Produtos', Object.keys(estoque).length],
+            ['Valor Total do Estoque', 'R$ ' + calcularValorEstoque().toFixed(2)],
+            ['Total de Vendas', 'R$ ' + calcularTotalVendas().toFixed(2)],
+            ['Número de Vendas', vendasDiarias.length],
+            ['Ticket Médio', 'R$ ' + calcularTicketMedio().toFixed(2)],
+        ];
+        let wsDashboard = XLSX.utils.aoa_to_sheet(dashboardData);
+        XLSX.utils.book_append_sheet(wb, wsDashboard, '📊 Dashboard');
+        
+        // ========== 2. PLANILHA DE ESTOQUE ==========
+        let estoqueData = [
+            ['CÓDIGO', 'PRODUTO', 'QUANTIDADE', 'PREÇO', 'VALOR TOTAL', 'VALIDADE', 'STATUS']
+        ];
+        for (let [codigo, p] of Object.entries(estoque)) {
+            let valorTotal = p.quantidade * p.preco;
+            let status = p.quantidade <= (p.estoqueMinimo || 5) ? 'ESTOQUE BAIXO' : 'NORMAL';
+            estoqueData.push([
+                codigo, 
+                (p.nome || '').toUpperCase(), 
+                p.quantidade, 
+                p.preco, 
+                valorTotal, 
+                p.validade || 'N/A', 
+                status
+            ]);
+        }
+        let wsEstoque = XLSX.utils.aoa_to_sheet(estoqueData);
+        XLSX.utils.book_append_sheet(wb, wsEstoque, '📦 Estoque');
+        
+        // ========== 3. PLANILHA DE VENDAS ==========
+        let vendasData = [
+            ['DATA', 'PRODUTO', 'QUANTIDADE', 'VALOR', 'PAGAMENTO']
+        ];
+        for (let venda of vendasDiarias) {
+            let dataVenda = new Date(venda.data).toLocaleString('pt-BR');
+            for (let item of venda.itens) {
+                vendasData.push([
+                    dataVenda,
+                    (item.nome || '').toUpperCase(),
+                    item.quantidade,
+                    item.quantidade * item.preco,
+                    venda.formaPagamento
+                ]);
+            }
+        }
+        let wsVendas = XLSX.utils.aoa_to_sheet(vendasData);
+        XLSX.utils.book_append_sheet(wb, wsVendas, '📅 Vendas');
+        
+        // ========== 4. PLANILHA ESTOQUE BAIXO ==========
+        let baixoData = [
+            ['PRODUTO', 'QUANTIDADE ATUAL', 'ESTOQUE MÍNIMO', 'SUGESTÃO DE COMPRA']
+        ];
+        for (let [codigo, p] of Object.entries(estoque)) {
+            let minimo = p.estoqueMinimo || 5;
+            if (p.quantidade <= minimo) {
+                baixoData.push([
+                    p.nome.toUpperCase(),
+                    p.quantidade,
+                    minimo,
+                    minimo * 2 - p.quantidade
+                ]);
+            }
+        }
+        let wsBaixo = XLSX.utils.aoa_to_sheet(baixoData);
+        XLSX.utils.book_append_sheet(wb, wsBaixo, '⚠️ Estoque Baixo');
+        
+        // ========== 5. PLANILHA RESUMO ==========
+        let resumoData = [
+            ['RESUMO EXECUTIVO', ''],
+            ['Total de Produtos', Object.keys(estoque).length],
+            ['Valor do Estoque', 'R$ ' + calcularValorEstoque().toFixed(2)],
+            ['Total de Vendas', 'R$ ' + calcularTotalVendas().toFixed(2)],
+            ['Quantidade de Vendas', vendasDiarias.length],
+        ];
+        let wsResumo = XLSX.utils.aoa_to_sheet(resumoData);
+        XLSX.utils.book_append_sheet(wb, wsResumo, '📋 Resumo');
+        
+        // Salvar arquivo
+        XLSX.writeFile(wb, `Relatorio_Estoque_${dataStr}.xlsx`);
+        mostrarAlerta('✅ Relatório Excel gerado com sucesso!', 'success');
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarAlerta('❌ Erro ao gerar: ' + error.message, 'error');
+    }
+}
+
+
+        
         function fazerBackup() {
             const backup = { data: new Date().toISOString(), estoque, vendasDiarias };
             const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
@@ -662,7 +491,7 @@
             URL.revokeObjectURL(url);
             mostrarAlerta('✅ Backup criado!', 'success');
         }
-
+        
         function restaurarBackup() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -685,7 +514,7 @@
             };
             input.click();
         }
-
+        
         function atualizarTabela() {
             const tbody = document.getElementById('listaEstoque');
             tbody.innerHTML = '';
@@ -702,10 +531,10 @@
                     if (diasRestantes <= 0) validadeStatus = ' ❌ VENCIDO';
                     else if (diasRestantes <= 7) validadeStatus = ` ⚠️ Vence em ${diasRestantes} dias`;
                 }
-                tbody.innerHTML += `<tr class="${classe}"><td>${codigo.substring(0, 10)}...</td><td><strong>${p.nome}${validadeStatus}</strong></td><td>${p.quantidade}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.validade ? new Date(p.validade).toLocaleDateString('pt-BR') : 'N/A'}</td><td><button class="btn btn-info" onclick="carregarProduto('${codigo}')" style="padding:5px 10px;">✏️</button><button class="btn btn-danger" onclick="removerProduto('${codigo}')" style="padding:5px 10px;">🗑️</button><button class="btn btn-success" onclick="adicionarAoCarrinho('${codigo}', 1)" style="padding:5px 10px;">➕</button></td></tr>`;
+                tbody.innerHTML += `<tr class="${classe}"><td>${codigo.substring(0, 10)}...</td><td><strong>${p.nome}${validadeStatus}</strong></td><td>${p.quantidade}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.validade ? new Date(p.validade).toLocaleDateString('pt-BR') : 'N/A'}</td><td><button class="btn btn-info" onclick="carregarProduto('${codigo}')">✏️</button> <button class="btn btn-danger" onclick="removerProduto('${codigo}')">🗑️</button> <button class="btn btn-success" onclick="adicionarAoCarrinho('${codigo}', 1)">➕</button></td></tr>`;
             }
         }
-
+        
         function limparFormulario() {
             document.getElementById('codigoBarras').value = '';
             document.getElementById('produtoNome').value = '';
@@ -714,7 +543,7 @@
             document.getElementById('dataValidade').value = '';
             document.getElementById('estoqueMinimo').value = ESTOQUE_MINIMO_PADRAO;
         }
-
+        
         setInterval(() => {
             const ultimoBackup = localStorage.getItem('ultimoBackup');
             const hoje = new Date().toISOString().split('T')[0];
@@ -723,9 +552,12 @@
                 localStorage.setItem('backupAutomatico', JSON.stringify({ data: new Date().toISOString(), estoque, vendasDiarias }));
             }
         }, 3600000);
-
+        
         atualizarTabela();
         verificarEstoqueBaixo();
     </script>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 </body>
 </html>
